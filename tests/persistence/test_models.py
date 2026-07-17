@@ -147,7 +147,7 @@ def test_all_first_version_entities_are_persistable(
         assert session.scalar(select(func.count(Favorite.id))) == 1
         assert session.scalar(select(func.count(QuestionAnswerMessage.id))) == 1
         assert session.scalar(select(func.count(PendingCleanup.id))) == 1
-        assert session.scalar(select(func.count(SettingReference.id))) == 1
+        assert session.scalar(select(func.count(SettingReference.key))) == 1
         assert session.scalar(select(func.count(BackgroundTask.id))) == 1
 
 
@@ -167,7 +167,8 @@ def test_all_first_version_entities_are_persistable(
             "ix_favorite_normalized_phrase",
         ),
         (
-            "SELECT id FROM pending_cleanup WHERE status = 'pending' AND purge_after <= '2100-01-01'",
+            "SELECT id FROM pending_cleanup WHERE status = 'pending' "
+            "AND purge_after <= '2100-01-01'",
             "ix_pending_cleanup_status_purge_after",
         ),
         (

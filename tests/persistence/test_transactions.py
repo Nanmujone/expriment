@@ -28,10 +28,9 @@ def test_unit_of_work_requires_explicit_commit_and_rolls_back_exceptions(
     with session_factory() as session:
         assert session.scalar(select(Song).where(Song.provider_song_id == "no-commit")) is None
 
-    with pytest.raises(RuntimeError, match="boom"):
-        with UnitOfWork(session_factory) as uow:
-            uow.session.add(Song(provider="local", provider_song_id="exception", title="Discard"))
-            raise RuntimeError("boom")
+    with pytest.raises(RuntimeError, match="boom"), UnitOfWork(session_factory) as uow:
+        uow.session.add(Song(provider="local", provider_song_id="exception", title="Discard"))
+        raise RuntimeError("boom")
 
     with session_factory() as session:
         assert session.scalar(select(Song).where(Song.provider_song_id == "exception")) is None
@@ -74,14 +73,21 @@ def test_sqlite_lock_is_classified_as_retryable(engine: Engine) -> None:
     second_engine = engine
     first = engine.connect()
     transaction = first.begin()
-    first.execute(text("INSERT INTO song (provider, provider_song_id, title) VALUES ('x', 'one', 'One')"))
+    first.execute(
+        text(
+            "INSERT INTO song "
+            "(provider, provider_song_id, title, created_at, updated_at) "
+            "VALUES ('x', 'one', 'One', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+        )
+    )
     try:
         with pytest.raises(PersistenceError) as caught:
             WriteCoordinator().execute(
                 lambda: second_engine.connect().execute(
                     text(
-                        "INSERT INTO song (provider, provider_song_id, title) "
-                        "VALUES ('x', 'two', 'Two')"
+                        "INSERT INTO song "
+                        "(provider, provider_song_id, title, created_at, updated_at) "
+                        "VALUES ('x', 'two', 'Two', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
                     )
                 )
             )
@@ -107,12 +113,17 @@ def test_validation_happens_before_transaction_and_batch_is_atomic(
             Song(provider="local", provider_song_id=value, title=value) for value in values
         )
 
-    writer = ValidatedBatchWriter(lambda: UnitOfWork(session_factory))
+    writer: ValidatedBatchWriter[str, str] = ValidatedBatchWriter(
+        lambda: UnitOfWork(session_factory)
+    )
     writer.write([" one ", " two "], validate=validate, persist=persist)
     assert phases == ["validate", "persist"]
 
     with session_factory() as session:
-        assert session.scalars(select(Song.provider_song_id).order_by(Song.id)).all() == ["one", "two"]
+        assert session.scalars(select(Song.provider_song_id).order_by(Song.id)).all() == [
+            "one",
+            "two",
+        ]
 
 
 @pytest.mark.parametrize("operation", ["insert", "update", "batch"])
@@ -132,17 +143,23 @@ def test_disk_full_rolls_back_write_and_is_not_retried(
         attempts += 1
         raise OSError(errno.ENOSPC, "No space left on device")
 
+    action: Callable[[], object]
     if operation == "batch":
-        batch_writer = ValidatedBatchWriter(
+        batch_writer: ValidatedBatchWriter[str, str] = ValidatedBatchWriter(
             lambda: UnitOfWork(session_factory), before_commit=fail_before_commit
         )
-        action: Callable[[], object] = lambda: batch_writer.write(
-            ["new-1", "new-2"],
-            validate=list,
-            persist=lambda session, values: session.add_all(
-                Song(provider="local", provider_song_id=value, title=value) for value in values
-            ),
-        )
+
+        def batch_action() -> object:
+            batch_writer.write(
+                ["new-1", "new-2"],
+                validate=list,
+                persist=lambda session, values: session.add_all(
+                    Song(provider="local", provider_song_id=value, title=value) for value in values
+                ),
+            )
+            return None
+
+        action = batch_action
     else:
         writer = TransactionalWriter(
             lambda: UnitOfWork(session_factory), before_commit=fail_before_commit
@@ -156,7 +173,10 @@ def test_disk_full_rolls_back_write_and_is_not_retried(
                 assert song is not None
                 song.title = "Changed"
 
-        action = lambda: writer.write(write_action)
+        def transactional_action() -> object:
+            return writer.write(write_action)
+
+        action = transactional_action
 
     with pytest.raises(PersistenceError) as caught:
         action()
