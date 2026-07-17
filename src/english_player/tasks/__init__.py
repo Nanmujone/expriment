@@ -2,6 +2,7 @@
 
 from .cancellation import CancellationToken
 from .concurrency import TaskConcurrencyLimits
+from .errors import user_error_for
 from .executor import TaskExecutionError, TaskExecutor, TaskSubmissionClosedError
 from .models import (
     CancellationCapability,
@@ -58,4 +59,5 @@ __all__ = [
     "UserError",
     "is_retryable",
     "run_with_retry",
+    "user_error_for",
 ]
