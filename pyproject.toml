@@ -37,7 +37,7 @@ dev = [
 packages = ["src/english_player"]
 
 [tool.pytest.ini_options]
-addopts = "-ra --strict-config --strict-markers"
+addopts = "-ra --strict-config --strict-markers --import-mode=importlib"
 asyncio_mode = "auto"
 qt_api = "pyside6"
 testpaths = ["tests"]

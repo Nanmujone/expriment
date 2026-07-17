@@ -57,6 +57,22 @@ uv run --frozen ruff format --check .
 
 该结果只证明空工程基线可用，不代表任何业务模块已完成。
 
+## 2026-07-17 阶段 0 合并验证
+
+后台任务、持久化迁移和网易云可行性验证分支合并后，首次全量 pytest 收集发现 `tests/tasks/test_models.py` 与 `tests/persistence/test_models.py` 同名冲突。根因是 pytest 默认导入模式把不同目录下的同名测试模块放入同一顶层命名空间；在 `pyproject.toml` 固定 `--import-mode=importlib` 后重新执行：
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m mypy --strict src tools
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+git diff --check
+```
+
+结果：pytest `122 passed in 4.09s`；mypy strict 检查 25 个源文件无错误；Ruff check 通过；44 个文件格式正确；`git diff --check` 退出码 0。
+
+网易云验证证据见 `doc/verification/netease-gate-2026-07-17.md`，门状态为 `PARTIAL_OFFLINE`。用户确认首版接受该状态，并要求精简、尽快交付；因此当前首版排除 Node.js 和网易云适配层，继续本地 MP3/LRC 与 AI 主链路。
+
 ### 首次提交前复验
 
 `pyproject.toml` 重新暂存后，普通 `uv run --frozen` 尝试重新创建隔离构建环境；沙箱无法访问 PyPI，因而在获取 Hatchling 时失败。该失败属于联网限制，不是测试、类型或格式失败。此前已成功执行 `uv sync --frozen`，因此使用现有锁定环境复验：
