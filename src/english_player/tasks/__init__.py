@@ -21,6 +21,15 @@ from .registry import (
     TaskRegistryError,
     UnknownTaskError,
 )
+from .retry import (
+    OperationError,
+    OperationKind,
+    RetryExhaustedError,
+    RetryPolicy,
+    TimeoutSettings,
+    is_retryable,
+    run_with_retry,
+)
 
 __all__ = [
     "CancellationCapability",
@@ -28,6 +37,10 @@ __all__ = [
     "DuplicateTaskError",
     "ErrorCategory",
     "InvalidTaskTransitionError",
+    "OperationError",
+    "OperationKind",
+    "RetryExhaustedError",
+    "RetryPolicy",
     "TaskConcurrencyLimits",
     "TaskExecutionError",
     "TaskExecutor",
@@ -40,6 +53,9 @@ __all__ = [
     "TaskStatus",
     "TaskSubmissionClosedError",
     "TaskType",
+    "TimeoutSettings",
     "UnknownTaskError",
     "UserError",
+    "is_retryable",
+    "run_with_retry",
 ]
