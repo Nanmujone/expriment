@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "english-song-learning-player"
+version = "0.1.0"
+description = "Windows desktop player for learning English with synchronized song lyrics."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Nanmujone" }]
+dependencies = [
+  "alembic>=1.16,<2",
+  "httpx>=0.28,<1",
+  "keyring>=25.6,<26",
+  "platformdirs>=4.3,<5",
+  "psutil>=7,<8",
+  "pydantic>=2.11,<3",
+  "pyside6>=6.9,<7",
+  "qasync>=0.28,<1",
+  "sqlalchemy>=2.0,<3",
+]
+
+[dependency-groups]
+dev = [
+  "coverage>=7.9,<8",
+  "mypy>=1.16,<2",
+  "pyinstaller>=6.14,<7",
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=1.0,<2",
+  "pytest-qt>=4.5,<5",
+  "ruff>=0.12,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/english_player"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+asyncio_mode = "auto"
+qt_api = "pyside6"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["keyring.*", "qasync"]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
+
+[tool.ruff.format]
+line-ending = "lf"
+quote-style = "double"
+
+[tool.coverage.run]
+branch = true
+source = ["english_player"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
