@@ -1,6 +1,7 @@
 """Public background-task contracts."""
 
 from .cancellation import CancellationToken
+from .concurrency import TaskConcurrencyLimits
 from .executor import TaskExecutionError, TaskExecutor, TaskSubmissionClosedError
 from .models import (
     CancellationCapability,
@@ -27,6 +28,7 @@ __all__ = [
     "DuplicateTaskError",
     "ErrorCategory",
     "InvalidTaskTransitionError",
+    "TaskConcurrencyLimits",
     "TaskExecutionError",
     "TaskExecutor",
     "TaskId",
