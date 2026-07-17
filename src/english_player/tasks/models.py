@@ -148,4 +148,3 @@ class TaskResult:
         """Construct a failed result."""
 
         return cls(success=False, value=None, error=error)
-

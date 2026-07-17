@@ -32,4 +32,3 @@ class CancellationToken:
 
         if self.is_cancelled:
             raise asyncio.CancelledError
-

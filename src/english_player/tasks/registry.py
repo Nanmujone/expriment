@@ -154,4 +154,3 @@ class TaskRegistry:
             completed = replace(transitioned, result=result, updated_at=datetime.now(UTC))
             self._records[task_id] = completed
             return completed
-

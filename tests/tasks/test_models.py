@@ -54,4 +54,3 @@ def test_task_dto_enums_cover_required_contract() -> None:
     assert TaskType.PLAYLIST_REFRESH.value == "playlist_refresh"
     assert TaskStatus.CANCELLING.value == "cancelling"
     assert CancellationCapability.CANCELLABLE.value == "cancellable"
-

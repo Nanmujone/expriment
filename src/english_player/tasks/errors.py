@@ -119,4 +119,3 @@ def user_error_for(category: ErrorCategory, code: str) -> UserError:
         next_action=template.next_action,
         retryable=template.retryable,
     )
-
