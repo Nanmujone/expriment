@@ -7,11 +7,11 @@ import hashlib
 import shutil
 from pathlib import Path
 
-import pytest
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, text
 
+from alembic import command
+from english_player.infrastructure.persistence.database import create_sqlite_engine
 from english_player.infrastructure.persistence.migrations import (
     BackupVerificationCredential,
     MigrationExecutor,
@@ -47,7 +47,7 @@ def test_upgrade_empty_database_creates_all_tables_constraints_and_indexes(tmp_p
     database_path = tmp_path / "empty.sqlite3"
     command.upgrade(_config(database_path), "head")
 
-    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    engine = create_sqlite_engine(database_path)
     inspector = inspect(engine)
     expected_tables = {
         "playlist",
@@ -106,7 +106,11 @@ def test_migration_dry_run_and_failure_leave_original_database_readable(tmp_path
     engine = create_engine(f"sqlite:///{database_path.as_posix()}")
     with engine.begin() as connection:
         connection.execute(
-            text("INSERT INTO song (provider, provider_song_id, title) VALUES ('local', '1', 'Old')")
+            text(
+                "INSERT INTO song "
+                "(provider, provider_song_id, title, created_at, updated_at) "
+                "VALUES ('local', '1', 'Old', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+            )
         )
     engine.dispose()
     backup_path = tmp_path / "before.sqlite3"
@@ -130,7 +134,9 @@ def test_migration_dry_run_and_failure_leave_original_database_readable(tmp_path
 
     readable = create_engine(f"sqlite:///{database_path.as_posix()}")
     with readable.connect() as connection:
-        assert connection.scalar(text("SELECT title FROM song WHERE provider_song_id = '1'")) == "Old"
+        assert (
+            connection.scalar(text("SELECT title FROM song WHERE provider_song_id = '1'")) == "Old"
+        )
     readable.dispose()
 
 
