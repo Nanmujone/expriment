@@ -29,6 +29,8 @@ uv run ruff format --check .
 .\.venv\Scripts\python.exe -m english_player
 ```
 
+当前开发电脑也可以直接双击仓库根目录的 `run-first-release.cmd`，它使用项目内已经配置好的 Python 环境启动，不修改系统 Python。
+
 生成精简便携构建：
 
 ```powershell

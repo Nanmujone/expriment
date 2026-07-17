@@ -83,6 +83,8 @@ git diff --check
 
 便携 ZIP：`dist/EnglishSongLearningPlayer-0.1.0-partial-offline-win64.zip`，61.3 MiB，SHA-256 `262A119CBE3BA6A077FA38C92E8891D4E38F6106CFE5A3E168DE81AE3A6CCB80`。该文件因包含未签名 EXE，当前只作为候选产物，不标记正式发布。
 
+为区分程序错误与打包策略阻止，使用项目内 `.venv\Scripts\pythonw.exe -m english_player` 启动同一桌面应用；进程成功运行 3 秒并通过主窗口受控关闭。因此当前代码和项目内运行环境可用，阻塞范围限定为未签名打包 EXE。仓库根目录提供 `run-first-release.cmd` 作为当前开发电脑的直接启动入口。
+
 ### 首次提交前复验
 
 `pyproject.toml` 重新暂存后，普通 `uv run --frozen` 尝试重新创建隔离构建环境；沙箱无法访问 PyPI，因而在获取 Hatchling 时失败。该失败属于联网限制，不是测试、类型或格式失败。此前已成功执行 `uv sync --frozen`，因此使用现有锁定环境复验：
