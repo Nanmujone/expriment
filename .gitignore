@@ -44,20 +44,20 @@ cookies*.json
 *.db-wal
 *.sqlite
 *.sqlite3
-data/
-user-data/
-user_data/
-runtime/
-var/
+/data/
+/user-data/
+/user_data/
+/runtime/
+/var/
 
 # Logs, diagnostics, caches, and backups
 *.log
-logs/
-diagnostics/
-crash-reports/
-cache/
-caches/
-backups/
+/logs/
+/diagnostics/
+/crash-reports/
+/cache/
+/caches/
+/backups/
 *.bak
 *.backup
 *.zip
@@ -82,10 +82,10 @@ Thumbs.db
 Desktop.ini
 
 # Local worktrees and temporary files
-.worktrees/
-worktrees/
-tmp/
-temp/
+/.worktrees/
+/worktrees/
+/tmp/
+/temp/
 *.tmp
 *.swp
 *~
