@@ -18,6 +18,7 @@ build/
 dist/
 *.egg-info/
 *.spec
+!EnglishSongLearningPlayer.spec
 
 # Node.js dependencies and caches
 node_modules/

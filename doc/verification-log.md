@@ -73,6 +73,16 @@ git diff --check
 
 网易云验证证据见 `doc/verification/netease-gate-2026-07-17.md`，门状态为 `PARTIAL_OFFLINE`。用户确认首版接受该状态，并要求精简、尽快交付；因此当前首版排除 Node.js 和网易云适配层，继续本地 MP3/LRC 与 AI 主链路。
 
+## 2026-07-17 精简首版候选
+
+本地媒体、歌词、播放器、Qt 界面和 AI Chat Completions 兼容适配器加入后，执行全量质量门：pytest `147 passed in 4.75s`；mypy strict 检查 45 个源文件无错误；Ruff 检查通过；72 个文件格式正确；`git diff --check` 退出码 0。
+
+`scripts/build-first-release.ps1` 使用 PyInstaller 6.21.0 生成 `PARTIAL_OFFLINE` onedir 构建，输出目录大小为 147 MiB，递归检查未发现 `node.exe`。
+
+打包 EXE 启动烟雾测试未通过：本机 Windows Application Control 策略阻止未签名 PyInstaller EXE 启动。最初的临时 PowerShell 命令没有把 `Start-Process` 的非终止错误转成失败，因而错误打印成功提示；已新增 `$ErrorActionPreference = "Stop"` 的 `scripts/smoke-packaged-app.ps1` 防止假阳性。源码运行和 pytest-qt 界面测试通过，但真实打包 EXE 启动项保持未验证，发布前需要可信代码签名或允许该发布者的受控测试环境。
+
+便携 ZIP：`dist/EnglishSongLearningPlayer-0.1.0-partial-offline-win64.zip`，61.3 MiB，SHA-256 `262A119CBE3BA6A077FA38C92E8891D4E38F6106CFE5A3E168DE81AE3A6CCB80`。该文件因包含未签名 EXE，当前只作为候选产物，不标记正式发布。
+
 ### 首次提交前复验
 
 `pyproject.toml` 重新暂存后，普通 `uv run --frozen` 尝试重新创建隔离构建环境；沙箱无法访问 PyPI，因而在获取 Hatchling 时失败。该失败属于联网限制，不是测试、类型或格式失败。此前已成功执行 `uv sync --frozen`，因此使用现有锁定环境复验：

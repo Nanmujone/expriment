@@ -8,10 +8,10 @@
 
 ## 最小任务
 
-- [ ] `PKG-01` 锁定并记录 Python、PySide6/Qt、PyInstaller 和安装器工具版本；仅 `ONLINE_GATE_PASSED` 构建锁定 Node.js LTS 与 Node 依赖；验证可从干净环境复现依赖。
-- [ ] `PKG-02` 创建 PyInstaller spec 和构建脚本，包含 Python 主程序、迁移资源、许可证和启动元数据；构建过程不得读取或嵌入开发机凭据与用户数据。
+- [ ] `PKG-01` 已锁定 Python、PySide6/Qt 和 PyInstaller 版本并成功构建；干净环境复现仍待验证。
+- [ ] `PKG-02` 已创建 PyInstaller spec 和构建脚本；迁移资源、许可证和最终启动元数据仍待补齐。
 - [ ] `PKG-03` 打包 Qt 运行库、平台插件、Qt Multimedia 后端和所需编解码组件；在无开发环境的 Windows 10/11 虚拟机验证启动与原创 MP3 播放。
-- [ ] `PKG-04` 按验证门条件打包：`PARTIAL_OFFLINE` 构建必须排除 Node.js 和网易云适配层；仅 `ONLINE_GATE_PASSED` 构建携带固定版本 Node.js LTS、锁定依赖和网易云适配层，并验证随机回环端口、标准输入会话令牌、健康检查、有限重启和受控退出。
+- [x] `PKG-04` 当前 `PARTIAL_OFFLINE` 构建递归扫描确认排除 `node.exe` 和网易云适配层；在线构建保持禁用。
 - [ ] `PKG-05` 定义安装目录和 Windows 用户数据目录；验证运行时数据库、日志、缓存、备份和设置不写入安装目录。
 - [ ] `PKG-06` 生成普通 Windows 安装器和卸载器，包含开始菜单/桌面入口、版本信息、许可证与卸载项；最终用户无需手工安装 Python 或 Node.js。
 - [ ] `PKG-07` 测试全新安装、重复安装和修复安装；启动后完成缓存读取、本地原创素材播放和 Qt 插件烟雾测试；Node 健康检查仅适用于 `ONLINE_GATE_PASSED` 构建。

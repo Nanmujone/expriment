@@ -8,15 +8,15 @@
 
 ## 最小任务
 
-- [ ] `NAV-01` 建立 `src/english_player/ui/` 包和最小 `QApplication` 启动入口；用 `pytest-qt` 验证主窗口可创建和关闭。
-- [ ] `NAV-02` 实现 `MainWindowShell` 的单窗口布局与侧栏占位区；测试窗口始终只有一个主内容区。
-- [ ] `NAV-03` 实现 `NavigationService` 的歌单、正在播放、词句收藏、设置四条路由；测试未知路由返回标准错误而不崩溃。
-- [ ] `NAV-04` 将四个侧栏入口绑定路由和选中状态；测试鼠标与键盘均可切换页面。
+- [x] `NAV-01` 建立 `src/english_player/ui/` 包和最小 `QApplication` 启动入口；用 `pytest-qt` 验证主窗口可创建和关闭。
+- [x] `NAV-02` 实现 `MainWindowShell` 的单窗口布局与侧栏占位区；测试窗口始终只有一个主内容区。
+- [ ] `NAV-03` 四条路由和未知路由标准错误尚未全部抽离到独立 `NavigationService`。
+- [ ] `NAV-04` 四个侧栏入口已可鼠标切换；键盘与选中状态测试仍待补齐。
 - [ ] `NAV-05` 实现加载、空、正常、不可用、错误五类通用页面状态组件；测试每种状态都有文字或图标，不能只靠颜色表达。
 - [ ] `NAV-06` 实现歌单页面及 `PlaylistViewModel` 绑定；测试缓存列表、刷新提示和失败重试入口。
-- [ ] `NAV-07` 实现“歌词主区 + 解析侧栏”的正在播放页面及 `NowPlayingViewModel` 绑定；测试选择歌词不会触发跳转或暂停。
+- [ ] `NAV-07` 已实现歌词与 AI 解析双区的正在播放页；独立 `NowPlayingViewModel` 与选择行为测试仍待补齐。
 - [ ] `NAV-08` 实现收藏页面及 `FavoritesViewModel` 绑定；测试搜索、来源筛选、最近排序、编辑和删除操作入口。
-- [ ] `NAV-09` 实现设置页面及 `SettingsViewModel` 绑定；密钥只能写入 Windows 凭据端口，界面不得回显完整值，保存前显示数据去向和隐私说明。
+- [ ] `NAV-09` 已实现 AI 设置页面、凭据写入和不回显；独立 `SettingsViewModel` 绑定测试仍待补齐。
 - [ ] `NAV-10` 实现 `ShortcutController`：空格播放/暂停、方向键控制及冲突规避；测试文本输入控件获得焦点时不误触播放器。
 - [ ] `NAV-11` 实现 `AccessibilityController`：文字缩放、稳定焦点顺序、控件可访问名称；测试缩放后关键控件不丢失。
 - [ ] `NAV-12` 实现关闭窗口时“退出并停止播放/缩小到托盘”选择和托盘恢复；测试两条关闭路径。
