@@ -67,7 +67,7 @@
 | AI 接口 | OpenAI Chat Completions 兼容基线 | 支持时使用 JSON Schema；否则采用严格 JSON 输出和本地校验 |
 | 凭据 | Windows Credential Manager | 仅保存 AI API 密钥；数据库、日志、备份和 Git 不保存密钥 |
 | 备份 | 版本化 ZIP + SHA-256 | 单文件、不加密；不包含密钥、临时缓存和原始媒体 |
-| 打包 | PyInstaller | 生成无需用户安装 Python/Node.js 的 Windows 安装内容；Node 运行时和适配层随包携带 |
+| 打包 | PyInstaller | 生成无需用户安装 Python 的 Windows 安装内容；仅在 `ONLINE_GATE_PASSED` 构建中携带 Node 运行时和网易云适配层 |
 | 测试 | pytest、pytest-qt、异步测试及契约测试 | 单元、集成、界面、适配器、迁移和恢复验证 |
 
 依赖应在锁定文件中固定到经过验收的具体版本。大版本升级必须重新运行播放、歌词同步、数据库迁移和安装包测试。
@@ -717,15 +717,17 @@ AppError
 
 若任一主流程无法合法、稳定地满足需求，状态转为 `PARTIAL_OFFLINE`：停止网易云在线链路的后续实现，禁用在线导入/播放/歌词入口并显示原因，但允许继续开发和使用不依赖该链路的本地播放、已有缓存阅读和 AI 学习能力。不得通过固定归档代码、Cookie、会员绕过、隐藏开关、跳过测试或非授权替代源规避验证失败；重新验证通过前不得将状态人工改为 `ONLINE_GATE_PASSED`。
 
+当前首版按用户 2026-07-17 确认采用 `PARTIAL_OFFLINE` 精简交付路径：优先完成本地 MP3/LRC、歌词学习、收藏、问答、备份和 AI 能力，不等待网易云在线链路恢复。构建必须在编译期固定门状态；`PARTIAL_OFFLINE` 产物不得包含或启动网易云 Node.js 适配层，也不得显示可绕过门状态的隐藏入口。
+
 ### 13.2 安装包结构
 
 安装包包含：
 
 - PyInstaller 打包的 Python 主程序和依赖；
 - Qt 运行库及播放所需插件；
-- 经验证固定版本的 Node.js LTS 运行时和网易云适配层；
+- 仅 `ONLINE_GATE_PASSED` 构建包含经验证固定版本的 Node.js LTS 运行时和网易云适配层；当前 `PARTIAL_OFFLINE` 精简首版排除二者；
 - 数据库初始迁移、默认非敏感配置、许可证和第三方声明；
-- 由锁定依赖和最终安装产物生成的机器可读 SBOM（CycloneDX 或 SPDX）及人可读第三方许可/NOTICE，覆盖 Python、Node.js、Qt、原生库、打包运行时和全部传递依赖；
+- 由锁定依赖和最终安装产物生成的机器可读 SBOM（CycloneDX 或 SPDX）及人可读第三方许可/NOTICE，覆盖产物实际包含的 Python、可选 Node.js、Qt、原生库、打包运行时和全部传递依赖；
 - 卸载程序。
 
 依赖引入与版本升级必须完成许可证识别、来源和完整性记录；未知许可、许可证文本缺失或与预期分发方式不兼容时阻止发布，不得只生成清单后忽略结论。
