@@ -13,6 +13,7 @@ class AIConfig:
     endpoint: str
     model: str
     timeout_seconds: float = 60.0
+    provider: str = "openai"
 
     def __post_init__(self) -> None:
         parsed = urlsplit(self.endpoint)
@@ -26,6 +27,8 @@ class AIConfig:
             raise ValueError("AI 模型不能为空")
         if not 1 <= self.timeout_seconds <= 300:
             raise ValueError("AI 超时必须在 1 到 300 秒之间")
+        if self.provider not in {"openai", "deepseek"}:
+            raise ValueError("不支持的 AI 服务商")
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,19 +63,23 @@ class OpenAIChatClient:
         if len(lyrics) > 100_000:
             raise ValueError("歌词过长, 无法安全发送")
 
-        body = {
+        system_prompt = (
+            "你是英语歌曲学习助手。只返回 JSON, 不要添加 Markdown 代码块。"
+            '输出示例: {"summary_zh":"歌曲概述",'
+            '"language_notes":["短语解释"]}。'
+            "用中文概述歌曲表达, 并列出简洁的英语语境、短语或语法要点。"
+        )
+        body: dict[str, object] = {
             "model": self.config.model,
             "messages": [
-                {
-                    "role": "developer",
-                    "content": (
-                        "你是英语歌曲学习助手。只返回符合指定 JSON Schema 的内容。"
-                        "用中文概述歌曲表达, 并列出简洁的英语语境、短语或语法要点。"
-                    ),
-                },
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"请解析以下歌词:\n\n{lyrics}"},
             ],
-            "response_format": {
+        }
+        if self.config.provider == "deepseek":
+            body["response_format"] = {"type": "json_object"}
+        else:
+            body["response_format"] = {
                 "type": "json_schema",
                 "json_schema": {
                     "name": "song_analysis",
@@ -87,14 +94,20 @@ class OpenAIChatClient:
                         "additionalProperties": False,
                     },
                 },
-            },
-        }
+            }
         try:
             response = self._http.post(
                 f"{self.config.endpoint.rstrip('/')}/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}"},
                 json=body,
             )
+            provider_name = "DeepSeek" if self.config.provider == "deepseek" else "AI 服务"
+            if response.status_code == 401:
+                raise ValueError(f"{provider_name} API 密钥无效, 请在设置中重新填写")
+            if response.status_code == 402:
+                raise ValueError(f"{provider_name} API 余额不足, 请充值后重试")
+            if response.status_code == 429:
+                raise ValueError(f"{provider_name}请求过于频繁, 请稍后重试")
             response.raise_for_status()
             data = response.json()
             content = data["choices"][0]["message"]["content"]

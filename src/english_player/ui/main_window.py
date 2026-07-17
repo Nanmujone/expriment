@@ -2,14 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
+    QComboBox,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QPlainTextEdit,
@@ -64,8 +67,11 @@ class MainWindowShell(QMainWindow):
         self.controller.position_changed.connect(self.position_slider.setValue)
         self.controller.duration_changed.connect(self.position_slider.setMaximum)
         self.controller.state_changed.connect(self._show_state)
-        self.controller.status_message.connect(self.status_label.setText)
+        self.controller.status_message.connect(self._show_status)
         self.controller.analysis_changed.connect(self.analysis_view.setPlainText)
+        self.controller.analysis_busy_changed.connect(self._show_analysis_busy)
+        self.controller.library_changed.connect(self._show_library)
+        self._show_library(self.controller.saved_songs)
 
     def _create_library_page(self) -> QWidget:
         page = QWidget()
@@ -82,13 +88,18 @@ class MainWindowShell(QMainWindow):
         open_button.setObjectName("openLocalButton")
         open_button.setAccessibleName("选择本地 MP3")
         open_button.clicked.connect(self._choose_local_media)
+        self.library_list = QListWidget()
+        self.library_list.setObjectName("localLibraryList")
+        self.library_list.setAccessibleName("本地歌单")
+        self.library_list.itemDoubleClicked.connect(self._play_library_item)
         self.status_label = QLabel("尚未选择歌曲")
         self.status_label.setWordWrap(True)
         layout.addWidget(heading)
         layout.addWidget(banner)
         layout.addWidget(open_button)
+        layout.addWidget(QLabel("已保存歌曲 (双击播放)"))
+        layout.addWidget(self.library_list, 1)
         layout.addWidget(self.status_label)
-        layout.addStretch()
         return page
 
     def _create_now_playing_page(self) -> QWidget:
@@ -112,16 +123,16 @@ class MainWindowShell(QMainWindow):
         self.play_button = QPushButton("播放/暂停")
         self.play_button.setObjectName("playPauseButton")
         self.play_button.clicked.connect(self.controller.toggle_playback)
-        analyze_button = QPushButton("AI 解析歌词")
-        analyze_button.setObjectName("analyzeButton")
-        analyze_button.clicked.connect(self._confirm_ai_analysis)
+        self.analyze_button = QPushButton("AI 解析歌词")
+        self.analyze_button.setObjectName("analyzeButton")
+        self.analyze_button.clicked.connect(self._confirm_ai_analysis)
         volume = QSlider(Qt.Orientation.Horizontal)
         volume.setObjectName("volumeSlider")
         volume.setRange(0, 100)
         volume.setValue(70)
         volume.valueChanged.connect(self.controller.set_volume_percent)
         controls.addWidget(self.play_button)
-        controls.addWidget(analyze_button)
+        controls.addWidget(self.analyze_button)
         controls.addWidget(QLabel("音量"))
         controls.addWidget(volume)
         layout.addWidget(self.title_label)
@@ -139,20 +150,46 @@ class MainWindowShell(QMainWindow):
         privacy = QLabel("API 密钥只写入 Windows 凭据库, 不保存到项目、数据库、日志或备份。")
         privacy.setWordWrap(True)
         form = QFormLayout()
-        self.ai_endpoint = QLineEdit("https://api.openai.com/v1")
-        self.ai_model = QLineEdit("gpt-5.6-terra")
+        self.ai_provider = QComboBox()
+        self.ai_provider.addItem("DeepSeek", "deepseek")
+        self.ai_provider.addItem("OpenAI 兼容服务", "openai")
+        config = self.controller.ai_config
+        provider_index = self.ai_provider.findData(config.provider)
+        self.ai_provider.setCurrentIndex(max(0, provider_index))
+        self.ai_provider.currentIndexChanged.connect(self._provider_changed)
+        self.ai_endpoint = QLineEdit(config.endpoint)
+        self.ai_model = QLineEdit(config.model)
         self.ai_key = QLineEdit()
         self.ai_key.setEchoMode(QLineEdit.EchoMode.Password)
         self.ai_key.setPlaceholderText("保存后不会回显")
+        form.addRow("服务商", self.ai_provider)
         form.addRow("服务地址", self.ai_endpoint)
         form.addRow("模型", self.ai_model)
         form.addRow("API 密钥", self.ai_key)
         save_button = QPushButton("保存 AI 设置")
         save_button.clicked.connect(self._save_ai_settings)
+        api_key_button = QPushButton("打开 DeepSeek API 密钥页面")
+        api_key_button.setObjectName("deepSeekApiKeysButton")
+        api_key_button.clicked.connect(
+            lambda: QDesktopServices.openUrl(QUrl("https://platform.deepseek.com/api_keys"))
+        )
+        top_up_button = QPushButton("打开 DeepSeek 充值页面")
+        top_up_button.setObjectName("deepSeekTopUpButton")
+        top_up_button.clicked.connect(
+            lambda: QDesktopServices.openUrl(QUrl("https://platform.deepseek.com/top_up"))
+        )
+        deepseek_hint = QLabel(
+            "DeepSeek 推荐配置: 地址 https://api.deepseek.com, 模型 deepseek-v4-flash。"
+            "先在密钥页面创建密钥, 再充值少量余额即可测试。"
+        )
+        deepseek_hint.setWordWrap(True)
         layout.addWidget(heading)
         layout.addWidget(privacy)
         layout.addLayout(form)
         layout.addWidget(save_button)
+        layout.addWidget(api_key_button)
+        layout.addWidget(top_up_button)
+        layout.addWidget(deepseek_hint)
         layout.addStretch()
         return page
 
@@ -187,12 +224,50 @@ class MainWindowShell(QMainWindow):
     def _save_ai_settings(self) -> None:
         try:
             self.controller.configure_ai(
-                self.ai_endpoint.text(), self.ai_model.text(), self.ai_key.text()
+                str(self.ai_provider.currentData()),
+                self.ai_endpoint.text(),
+                self.ai_model.text(),
+                self.ai_key.text(),
             )
         except ValueError as error:
             self.status_label.setText(str(error))
             return
         self.ai_key.clear()
+
+    def _provider_changed(self, _index: int) -> None:
+        if self.ai_provider.currentData() == "deepseek":
+            self.ai_endpoint.setText("https://api.deepseek.com")
+            self.ai_model.setText("deepseek-v4-flash")
+        else:
+            self.ai_endpoint.setText("https://api.openai.com/v1")
+            self.ai_model.setText("gpt-5.6-terra")
+
+    def _show_library(self, songs: object) -> None:
+        self.library_list.clear()
+        if not isinstance(songs, tuple):
+            return
+        for song in songs:
+            audio_path = Path(song.audio_path)
+            suffix = "" if audio_path.is_file() else " (文件已移动或删除)"
+            item = QListWidgetItem(f"{song.title}{suffix}")
+            item.setData(Qt.ItemDataRole.UserRole, song.audio_path)
+            item.setData(Qt.ItemDataRole.UserRole + 1, song.lyrics_path)
+            self.library_list.addItem(item)
+
+    def _play_library_item(self, item: QListWidgetItem) -> None:
+        audio_path = Path(str(item.data(Qt.ItemDataRole.UserRole)))
+        lyrics_value = item.data(Qt.ItemDataRole.UserRole + 1)
+        lyrics_path = Path(str(lyrics_value)) if lyrics_value else None
+        if self.controller.open_media(audio_path, lyrics_path):
+            self.pages.setCurrentIndex(1)
+
+    def _show_status(self, message: str) -> None:
+        self.status_label.setText(message)
+        self.statusBar().showMessage(message)
+
+    def _show_analysis_busy(self, busy: bool) -> None:
+        self.analyze_button.setEnabled(not busy)
+        self.analyze_button.setText("AI 正在解析…" if busy else "AI 解析歌词")
 
     def _confirm_ai_analysis(self) -> None:
         answer = QMessageBox.question(

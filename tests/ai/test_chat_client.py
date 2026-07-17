@@ -32,8 +32,43 @@ def test_chat_client_sends_lyrics_and_parses_strict_json() -> None:
     assert captured[0].headers["authorization"] == "Bearer secret-test-key"
     body = json.loads(captured[0].content)
     assert body["model"] == "gpt-5.6-terra"
-    assert body["messages"][0]["role"] == "developer"
+    assert body["messages"][0]["role"] == "system"
     assert "Hold on" in body["messages"][1]["content"]
+
+
+def test_deepseek_uses_json_object_compatibility_mode() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        content = json.dumps({"summary_zh": "概述", "language_notes": ["要点"]})
+        return httpx.Response(200, json={"choices": [{"message": {"content": content}}]})
+
+    client = OpenAIChatClient(
+        AIConfig(
+            "https://api.deepseek.com",
+            "deepseek-v4-flash",
+            provider="deepseek",
+        ),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    client.analyze("lyrics", "key")
+
+    body = json.loads(captured[0].content)
+    assert body["response_format"] == {"type": "json_object"}
+    assert captured[0].url == httpx.URL("https://api.deepseek.com/chat/completions")
+
+
+def test_deepseek_insufficient_balance_has_actionable_error() -> None:
+    transport = httpx.MockTransport(lambda _request: httpx.Response(402))
+    client = OpenAIChatClient(
+        AIConfig("https://api.deepseek.com", "deepseek-v4-flash", provider="deepseek"),
+        http_client=httpx.Client(transport=transport),
+    )
+
+    with pytest.raises(ValueError, match="余额不足"):
+        client.analyze("lyrics", "key")
 
 
 def test_invalid_or_missing_content_returns_safe_error() -> None:
