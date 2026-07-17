@@ -1,5 +1,7 @@
 """Public background-task contracts."""
 
+from .cancellation import CancellationToken
+from .executor import TaskExecutionError, TaskExecutor, TaskSubmissionClosedError
 from .models import (
     CancellationCapability,
     ErrorCategory,
@@ -21,9 +23,12 @@ from .registry import (
 
 __all__ = [
     "CancellationCapability",
+    "CancellationToken",
     "DuplicateTaskError",
     "ErrorCategory",
     "InvalidTaskTransitionError",
+    "TaskExecutionError",
+    "TaskExecutor",
     "TaskId",
     "TaskProgress",
     "TaskRecord",
@@ -31,6 +36,7 @@ __all__ = [
     "TaskRegistryError",
     "TaskResult",
     "TaskStatus",
+    "TaskSubmissionClosedError",
     "TaskType",
     "UnknownTaskError",
     "UserError",
